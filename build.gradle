@@ -1,0 +1,153 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+dependencies {
+    implementation 'org.xerial:sqlite-jdbc:3.41.2.2'
+}
+
+// Configuración de recursos
+sourceSets {
+    main {
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+}
+
+application {
+    mainClass = 'org.example.Main'
+}
+
+// Tarea para copiar base de datos
+task copyDatabase(type: Copy) {
+    description = 'Copia la base de datos a recursos'
+    group = 'build'
+
+    from 'Inventario.db'
+    into 'src/main/resources'
+
+    // Usar método más compatible
+    duplicatesStrategy = 'INCLUDE'
+}
+
+// Asegurar que copyDatabase se ejecute antes de compilar
+processResources {
+    dependsOn copyDatabase
+}
+
+build {
+    dependsOn copyDatabase
+}
+
+shadowJar {
+    archiveFileName = 'Calibrador.jar'
+    destinationDirectory = file("$projectDir/dist")
+
+    manifest {
+        attributes(
+                'Main-Class': 'org.example.Main',
+                'Multi-Release': 'true'
+        )
+    }
+}
+
+// Tarea para macOS
+task createMacApp(type: Exec) {
+    dependsOn shadowJar, copyDatabase
+
+    doFirst {
+        // Crear estructura de directorios
+        mkdir "${projectDir}/dist/Calibrador.app/Contents/MacOS"
+        mkdir "${projectDir}/dist/Calibrador.app/Contents/Resources"
+    }
+
+    commandLine 'bash', '-c', """
+        # Crear Info.plist
+        cat > "${projectDir}/dist/Calibrador.app/Contents/Info.plist" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>launch.sh</string>
+    <key>CFBundleIconFile</key>
+    <string>app_icon.icns</string>
+    <key>CFBundleIdentifier</key>
+    <string>org.example.Calibrador</string>
+    <key>CFBundleName</key>
+    <string>Calibrador</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+</dict>
+</plist>
+EOF
+
+        # Crear script de lanzamiento
+        cat > "${projectDir}/dist/Calibrador.app/Contents/MacOS/launch.sh" << EOF
+#!/bin/bash
+cd "\$(dirname "\$0")"
+
+# Verificar y copiar base de datos si no existe
+if [ ! -f "../Resources/Inventario.db" ]; then
+    cp "../../Inventario.db" "../Resources/Inventario.db"
+fi
+
+java -jar ../Resources/Calibrador.jar
+EOF
+        chmod +x "${projectDir}/dist/Calibrador.app/Contents/MacOS/launch.sh"
+
+        # Copiar JAR y base de datos
+        cp "${projectDir}/dist/Calibrador.jar" "${projectDir}/dist/Calibrador.app/Contents/Resources/"
+        cp "${projectDir}/Inventario.db" "${projectDir}/dist/Calibrador.app/Contents/Resources/"
+    """
+}
+
+// Tarea para Windows
+task createWindowsApp(type: Copy) {
+    dependsOn shadowJar, copyDatabase
+
+    from "${projectDir}/dist/Calibrador.jar"
+    from "${projectDir}/Inventario.db"
+
+    into "${projectDir}/dist/Calibrador_Windows"
+
+    doLast {
+        // Crear script de lanzamiento para Windows
+        def launchBat = new File("${projectDir}/dist/Calibrador_Windows/launch.bat")
+        launchBat.text = """
+@echo off
+REM Verificar y copiar base de datos si no existe
+if not exist "Inventario.db" (
+    copy "..\\Inventario.db" "Inventario.db"
+)
+
+java -jar Calibrador.jar
+pause
+"""
+    }
+}
+
+// Tarea para empaquetar ambas versiones
+task prepareDistribution(dependsOn: ['createMacApp', 'createWindowsApp']) {
+    description = 'Prepara distribuciones para macOS y Windows'
+    group = 'distribution'
+}
+
+// Limpiar directorios de distribución antes de crear nuevas versiones
+clean {
+    delete "${projectDir}/dist"
+}
