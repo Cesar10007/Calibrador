@@ -27,7 +27,7 @@ sourceSets {
 }
 
 application {
-    mainClass = 'org.example.Main'
+    mainClass = 'com.calibrador.example.Main'
 }
 
 // Tarea para copiar base de datos
@@ -57,7 +57,7 @@ shadowJar {
 
     manifest {
         attributes(
-                'Main-Class': 'org.example.Main',
+                'Main-Class': 'com.calibrador.example.Main',
                 'Multi-Release': 'true'
         )
     }
@@ -85,7 +85,7 @@ task createMacApp(type: Exec) {
     <key>CFBundleIconFile</key>
     <string>app_icon.icns</string>
     <key>CFBundleIdentifier</key>
-    <string>org.example.Calibrador</string>
+    <string>com.calibrador.example.Calibrador</string>
     <key>CFBundleName</key>
     <string>Calibrador</string>
     <key>CFBundlePackageType</key>
