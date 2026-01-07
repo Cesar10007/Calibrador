@@ -15,3 +15,6 @@ Thumbs.db
 
 # JARs generados
 dist/
+
+#.DS_Store
+.DS_Store
