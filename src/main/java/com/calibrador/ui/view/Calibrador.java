@@ -1,4 +1,4 @@
-package com.calibrador.ui;
+package com.calibrador.ui.view;
 
 import java.util.ArrayList;
 import javax.swing.*;

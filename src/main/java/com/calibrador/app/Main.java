@@ -1,4 +1,6 @@
-package com.calibrador.ui;
+package com.calibrador.app;
+
+import com.calibrador.ui.view.Calibrador;
 
 public class Main {
 
