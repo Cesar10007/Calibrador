@@ -16,5 +16,49 @@ Thumbs.db
 # JARs generados
 dist/
 
-#.DS_Store
-.DS_Store
+# ============================================
+# BASE DE DATOS (NO SUBIR A GITHUB)
+# ============================================
+# Archivos de base de datos SQLite
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+*_backup.db
+
+# EXCEPCIÓN: SÍ queremos subir los scripts SQL
+!src/main/resources/sql/*.sql
+!resources/sql/*.sql
+
+# ============================================
+# ARCHIVOS TEMPORALES Y COMPILADOS
+# ============================================
+*.class
+out/
+target/
+
+# ============================================
+# CONFIGURACIÓN LOCAL
+# ============================================
+# Archivos de configuración con datos sensibles
+application-local.properties
+*.properties.local
+config-local.json
+
+# ============================================
+# CARPETAS DE RECURSOS LOCALES
+# ============================================
+# Carpeta de documentos/certificados subidos por usuarios
+resources/documentos/
+resources/certificados/
+resources/uploads/
+
+# ============================================
+# ARCHIVOS DE IDE ADICIONALES
+# ============================================
+.vscode/
+*.swp
+*.swo
+*~
