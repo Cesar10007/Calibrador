@@ -1,70 +1,78 @@
 package com.calibrador.model;
 
 import java.time.LocalDate;
-import java.util.Objects;
+import java.time.LocalDateTime;
 
 /**
- * Entidad que representa un equipo de laboratorio
- * Corresponde a la tabla Equipo en la base de datos
- */
-
-/**
- * ⚠️ IMPORTANTE: Este modelo NO existe en tu código original Calibrador.java, pero lo vi en la estructura de tablas de DatabaseInitializer.
- * Como me pediste seguir los mismos requisitos (no inventar código), aquí están las opciones:
- * Opción A: NO crearlo (porque no está en tu código original)
- * Opción B: Crearlo como POJO básico (para que coincida con la tabla Equipo)
- * Te muestro la Opción B por si lo necesitas más adelante:
+ * Modelo de Equipo (CORE DEL SISTEMA)
+ * Representa los equipos que requieren calibración
  */
 public class Equipo {
 
-    private Integer id;
-    private String codigo;
+    private Integer idEquipo;
+    private String codigoInterno;
     private String nombre;
     private String marca;
     private String modelo;
     private String serie;
     private String ubicacion;
-    private String estado;
+    private EstadoEquipo estado;
+    private Integer idLaboratorio;
+    private Integer idEmpresa;
     private LocalDate fechaAdquisicion;
-    private LocalDate fechaCreacion;
-    private Integer activo;
+    private LocalDateTime fechaRegistro;
+    private String observaciones;
+    private Boolean activo;
 
-    /**
-     * Constructor vacío
-     */
-    public Equipo() {
-        this.estado = "OPERATIVO";
-        this.activo = 1;
+    // Enum para estados
+    public enum EstadoEquipo {
+        OPERATIVO("Operativo"),
+        MANTENIMIENTO("En Mantenimiento"),
+        FUERA_SERVICIO("Fuera de Servicio"),
+        BAJA("Dado de Baja");
+
+        private final String descripcion;
+
+        EstadoEquipo(String descripcion) {
+            this.descripcion = descripcion;
+        }
+
+        public String getDescripcion() {
+            return descripcion;
+        }
     }
 
-    /**
-     * Constructor con parámetros principales
-     */
-    public Equipo(String codigo, String nombre, String marca, String modelo) {
-        this.codigo = codigo;
+    // Constructor vacío
+    public Equipo() {
+        this.activo = true;
+        this.estado = EstadoEquipo.OPERATIVO;
+        this.fechaRegistro = LocalDateTime.now();
+    }
+
+    // Constructor con campos básicos
+    public Equipo(String codigoInterno, String nombre, String marca, String modelo) {
+        this();
+        this.codigoInterno = codigoInterno;
         this.nombre = nombre;
         this.marca = marca;
         this.modelo = modelo;
-        this.estado = "OPERATIVO";
-        this.activo = 1;
     }
 
-    // ==================== GETTERS Y SETTERS ====================
-
-    public Integer getId() {
-        return id;
+    // Getters y Setters
+    public Integer getIdEquipo() {
+        return idEquipo;
     }
 
-    public void setId(Integer id) {
-        this.id = id;
+    public void setIdEquipo(Integer idEquipo) {
+        this.idEquipo = idEquipo;
     }
 
-    public String getCodigo() {
-        return codigo;
+    public String getCodigoInterno() {
+        return codigoInterno;
     }
 
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
+    public void setCodigoInterno(String codigoInterno) {
+        this.codigoInterno = codigoInterno;
     }
 
     public String getNombre() {
@@ -107,12 +115,28 @@ public class Equipo {
         this.ubicacion = ubicacion;
     }
 
-    public String getEstado() {
+    public EstadoEquipo getEstado() {
         return estado;
     }
 
-    public void setEstado(String estado) {
+    public void setEstado(EstadoEquipo estado) {
         this.estado = estado;
+    }
+
+    public Integer getIdLaboratorio() {
+        return idLaboratorio;
+    }
+
+    public void setIdLaboratorio(Integer idLaboratorio) {
+        this.idLaboratorio = idLaboratorio;
+    }
+
+    public Integer getIdEmpresa() {
+        return idEmpresa;
+    }
+
+    public void setIdEmpresa(Integer idEmpresa) {
+        this.idEmpresa = idEmpresa;
     }
 
     public LocalDate getFechaAdquisicion() {
@@ -123,47 +147,78 @@ public class Equipo {
         this.fechaAdquisicion = fechaAdquisicion;
     }
 
-    public LocalDate getFechaCreacion() {
-        return fechaCreacion;
+    public LocalDateTime getFechaRegistro() {
+        return fechaRegistro;
     }
 
-    public void setFechaCreacion(LocalDate fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
+    public void setFechaRegistro(LocalDateTime fechaRegistro) {
+        this.fechaRegistro = fechaRegistro;
     }
 
-    public Integer getActivo() {
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
+
+    public Boolean getActivo() {
         return activo;
     }
 
-    public void setActivo(Integer activo) {
+    public void setActivo(Boolean activo) {
         this.activo = activo;
     }
 
-    // ==================== MÉTODOS OBJECT ====================
+    // Métodos auxiliares
+
+    /**
+     * Verifica si el equipo está operativo
+     */
+    public boolean estaOperativo() {
+        return estado == EstadoEquipo.OPERATIVO && activo;
+    }
+
+    /**
+     * Verifica si el equipo requiere calibración
+     */
+    public boolean requiereCalibracion() {
+        return estaOperativo();
+    }
+
+    /**
+     * Obtiene descripción completa del equipo
+     */
+    public String getDescripcionCompleta() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(codigoInterno).append(" - ");
+        sb.append(nombre);
+        if (marca != null) sb.append(" | ").append(marca);
+        if (modelo != null) sb.append(" ").append(modelo);
+        return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        return "Equipo{" +
+                "idEquipo=" + idEquipo +
+                ", codigoInterno='" + codigoInterno + '\'' +
+                ", nombre='" + nombre + '\'' +
+                ", estado=" + estado +
+                '}';
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Equipo equipo = (Equipo) o;
-        return Objects.equals(id, equipo.id) || Objects.equals(codigo, equipo.codigo);
+        return idEquipo != null && idEquipo.equals(equipo.idEquipo);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, codigo);
-    }
-
-    @Override
-    public String toString() {
-        return "Equipo{" +
-                "id=" + id +
-                ", codigo='" + codigo + '\'' +
-                ", nombre='" + nombre + '\'' +
-                ", marca='" + marca + '\'' +
-                ", modelo='" + modelo + '\'' +
-                ", estado='" + estado + '\'' +
-                '}';
+        return idEquipo != null ? idEquipo.hashCode() : 0;
     }
 }
-

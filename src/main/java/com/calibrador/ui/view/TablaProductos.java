@@ -1,4 +1,4 @@
-package com.calibrador.ui;
+package com.calibrador.ui.view;
 
 import com.calibrador.model.Producto;
 import javax.swing.*;
