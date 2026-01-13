@@ -1,7 +1,6 @@
 package com.calibrador.ui.view;
 
 import javax.swing.*;
-import java.awt.*;
 
 /**
  * Ventana principal moderna con menú
