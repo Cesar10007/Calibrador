@@ -3,11 +3,13 @@ package com.calibrador.infra;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import javax.swing.JOptionPane;
 
 /**
- * Inicializa la estructura de la base de datos
- * Crea tablas si no existen
+ * Inicializa la estructura de la base de datos.
+ * Crea las tablas si no existen.
+ *
+ * Ya no muestra JOptionPane — si algo falla lanza
+ * una RuntimeException para que Main.java la maneje.
  */
 public class DatabaseInitializer {
 
@@ -18,7 +20,8 @@ public class DatabaseInitializer {
     }
 
     /**
-     * Inicializa todas las tablas necesarias
+     * Crea todas las tablas necesarias si no existen.
+     * Lanza RuntimeException si falla — la app no puede funcionar sin BD.
      */
     public void inicializar() {
         try {
@@ -31,16 +34,11 @@ public class DatabaseInitializer {
             System.out.println("✓ Base de datos inicializada correctamente");
 
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null,
-                    "Error al inicializar la base de datos: " + e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            // Relanzar como excepción no verificada para que Main.java la capture
+            throw new RuntimeException("No se pudo inicializar la base de datos: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Crea la tabla Producto1 (productos de calibración)
-     */
     private void crearTablaProducto() throws SQLException {
         String sql = "CREATE TABLE IF NOT EXISTS Producto1 (" +
                 "    ID INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -52,13 +50,9 @@ public class DatabaseInitializer {
                 "    FECHA_CREACION TEXT DEFAULT CURRENT_TIMESTAMP," +
                 "    ACTIVO INTEGER DEFAULT 1" +
                 ")";
-
-        ejecutarSQL(sql, "Tabla Producto1 creada/verificada correctamente");
+        ejecutarSQL(sql, "Tabla Producto1 lista");
     }
 
-    /**
-     * Crea la tabla Equipo (equipos de laboratorio)
-     */
     private void crearTablaEquipo() throws SQLException {
         String sql = "CREATE TABLE IF NOT EXISTS Equipo (" +
                 "    ID INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -73,13 +67,9 @@ public class DatabaseInitializer {
                 "    FECHA_CREACION TEXT DEFAULT CURRENT_TIMESTAMP," +
                 "    ACTIVO INTEGER DEFAULT 1" +
                 ")";
-
-        ejecutarSQL(sql, "Tabla Equipo creada/verificada correctamente");
+        ejecutarSQL(sql, "Tabla Equipo lista");
     }
 
-    /**
-     * Crea la tabla Calibracion (registro histórico de calibraciones)
-     */
     private void crearTablaCalibracion() throws SQLException {
         String sql = "CREATE TABLE IF NOT EXISTS Calibracion (" +
                 "    ID INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -95,36 +85,24 @@ public class DatabaseInitializer {
                 "    FOREIGN KEY (EQUIPO_ID) REFERENCES Equipo(ID)," +
                 "    FOREIGN KEY (PRODUCTO_ID) REFERENCES Producto1(ID)" +
                 ")";
-
-        ejecutarSQL(sql, "Tabla Calibracion creada/verificada correctamente");
+        ejecutarSQL(sql, "Tabla Calibracion lista");
     }
 
-    /**
-     * Ejecuta una sentencia SQL DDL
-     */
     private void ejecutarSQL(String sql, String mensajeExito) throws SQLException {
         try (Connection conn = databaseManager.getConnection();
              Statement stmt = conn.createStatement()) {
-
             stmt.execute(sql);
             System.out.println("  ✓ " + mensajeExito);
         }
     }
 
-    /**
-     * Verifica si las tablas existen
-     */
     public boolean verificarTablas() {
         try (Connection conn = databaseManager.getConnection();
              Statement stmt = conn.createStatement()) {
-
-            // Intentar consultar las tablas principales
             stmt.executeQuery("SELECT COUNT(*) FROM Producto1").close();
             stmt.executeQuery("SELECT COUNT(*) FROM Equipo").close();
             stmt.executeQuery("SELECT COUNT(*) FROM Calibracion").close();
-
             return true;
-
         } catch (Exception e) {
             return false;
         }

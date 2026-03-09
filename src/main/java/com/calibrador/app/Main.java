@@ -1,10 +1,8 @@
 package com.calibrador.app;
 
 import com.calibrador.infra.DatabaseInitializer;
-import com.calibrador.infra.DatabaseManager;
 import com.calibrador.ui.view.Calibrador;
 import javax.swing.*;
-import java.awt.*;
 
 /**
  * Clase principal de la aplicación
