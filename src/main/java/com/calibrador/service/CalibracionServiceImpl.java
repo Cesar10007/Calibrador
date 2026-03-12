@@ -1,184 +1,92 @@
 package com.calibrador.service;
 
-import com.calibrador.model.Producto;
-import com.calibrador.repository.ProductoRepository;
-import com.calibrador.repository.ProductoRepositorySQLite;
+import com.calibrador.model.Calibracion;
+import com.calibrador.repository.CalibracionRepository;
 import com.calibrador.util.AppException;
-
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Implementación del servicio de productos.
+ * Implementación del servicio de calibraciones.
  * Solo contiene lógica de negocio — no sabe nada de UI.
  * Cuando algo sale mal, lanza AppException para que
- * quien llame (el controlador o endpoint) decida cómo mostrarlo.
+ * quien llame (el endpoint de Javalin) decida cómo mostrarlo.
  */
-public class ProductoServiceImpl implements ProductoService {
+public class CalibracionServiceImpl implements CalibracionService {
 
-    private final ProductoRepository productoRepository;
+    private final CalibracionRepository calibracionRepository;
 
-    public ProductoServiceImpl() {
-        this.productoRepository = new ProductoRepositorySQLite();
-    }
-
-    // Constructor para inyección de dependencias (testing)
-    public ProductoServiceImpl(ProductoRepository productoRepository) {
-        this.productoRepository = productoRepository;
+    public CalibracionServiceImpl(CalibracionRepository calibracionRepository) {
+        this.calibracionRepository = calibracionRepository;
     }
 
     @Override
-    public List<Producto> obtenerTodosLosProductos() throws AppException {
+    public List<Calibracion> obtenerTodasLasCalibraciones() throws AppException {
         try {
-            return productoRepository.obtenerTodos();
+            return calibracionRepository.obtenerTodas();
         } catch (SQLException e) {
-            throw new AppException("Error al cargar los productos", "DB_ERROR", e.getMessage(), e);
+            throw new AppException("Error al cargar las calibraciones", "DB_ERROR", e.getMessage(), e);
         }
     }
 
     @Override
-    public Producto obtenerProductoPorId(int id) throws AppException {
+    public List<Calibracion> obtenerCalibracionesPorEquipo(int equipoId) throws AppException {
+        if (equipoId <= 0) {
+            throw new AppException("El ID del equipo debe ser positivo", "VALIDATION_ERROR", null);
+        }
         try {
-            Producto producto = productoRepository.obtenerPorId(id);
-            if (producto == null) {
-                throw new AppException("Producto no encontrado con ID: " + id, "NOT_FOUND", null);
-            }
-            return producto;
+            return calibracionRepository.obtenerPorEquipo(equipoId);
         } catch (SQLException e) {
-            throw new AppException("Error al obtener el producto", "DB_ERROR", e.getMessage(), e);
+            throw new AppException("Error al cargar calibraciones del equipo", "DB_ERROR", e.getMessage(), e);
         }
     }
 
     @Override
-    public boolean crearProducto(String nombre, LocalDate fechaCalibracion, int mesesValidez) throws AppException {
-        // Validar datos — lanza AppException si algo está mal
-        validarProducto(nombre, fechaCalibracion, mesesValidez);
+    public boolean registrarCalibracion(Calibracion calibracion) throws AppException {
+        // Validar que la calibración tenga los datos mínimos
+        validarCalibracion(calibracion);
 
         try {
-            LocalDate fechaExpiracion = calcularFechaExpiracion(fechaCalibracion, mesesValidez);
-
-            Producto producto = new Producto();
-            producto.setNombre(nombre.trim());
-            producto.setFechaCalibracion(fechaCalibracion);
-            producto.setFechaExpiracion(fechaExpiracion);
-            producto.setMesesValidez(mesesValidez);
-
-            int filasAfectadas = productoRepository.insertar(producto);
-            return filasAfectadas > 0;
-
-        } catch (SQLException e) {
-            throw new AppException("Error al guardar el producto en la base de datos", "DB_ERROR", e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public boolean actualizarNombreProducto(int id, String nuevoNombre) throws AppException {
-        if (nuevoNombre == null || nuevoNombre.trim().isEmpty()) {
-            throw new AppException("El nombre no puede estar vacío", "VALIDATION_ERROR", null);
-        }
-
-        try {
-            int resultado = productoRepository.actualizarNombre(id, nuevoNombre.trim());
+            int resultado = calibracionRepository.insertar(calibracion);
             return resultado > 0;
         } catch (SQLException e) {
-            throw new AppException("Error al actualizar el nombre", "DB_ERROR", e.getMessage(), e);
+            throw new AppException("Error al registrar la calibración", "DB_ERROR", e.getMessage(), e);
         }
     }
 
     @Override
-    public boolean actualizarFechaCalibracion(int id, LocalDate nuevaFechaCalibracion) throws AppException {
-        if (nuevaFechaCalibracion == null) {
-            throw new AppException("La fecha de calibración no puede ser nula", "VALIDATION_ERROR", null);
+    public Calibracion obtenerCalibracionPorId(int id) throws AppException {
+        if (id <= 0) {
+            throw new AppException("El ID debe ser positivo", "VALIDATION_ERROR", null);
         }
-
         try {
-            Producto producto = productoRepository.obtenerPorId(id);
-            if (producto == null) {
-                throw new AppException("Producto no encontrado con ID: " + id, "NOT_FOUND", null);
+            Calibracion calibracion = calibracionRepository.obtenerPorId(id);
+            if (calibracion == null) {
+                throw new AppException("Calibración no encontrada con ID: " + id, "NOT_FOUND", null);
             }
-
-            int resultado = productoRepository.actualizarFechaCalibracion(
-                    id,
-                    nuevaFechaCalibracion,
-                    producto.getMesesValidez()
-            );
-            return resultado > 0;
-
+            return calibracion;
         } catch (SQLException e) {
-            throw new AppException("Error al actualizar la fecha de calibración", "DB_ERROR", e.getMessage(), e);
+            throw new AppException("Error al obtener la calibración", "DB_ERROR", e.getMessage(), e);
         }
     }
 
-    @Override
-    public boolean actualizarMesesValidez(int id, int nuevosMeses) throws AppException {
-        if (nuevosMeses <= 0) {
-            throw new AppException("Los meses de validez deben ser un número positivo", "VALIDATION_ERROR", null);
+    //MÉTODOS PRIVADOS
+    /**
+     * Valida que una calibración tenga los datos mínimos requeridos.
+     * Lanza AppException si algo falta — el endpoint decide cómo mostrarlo.
+     */
+    private void validarCalibracion(Calibracion calibracion) throws AppException {
+        if (calibracion == null) {
+            throw new AppException("La calibración no puede ser nula", "VALIDATION_ERROR", null);
         }
-
-        try {
-            Producto producto = productoRepository.obtenerPorId(id);
-            if (producto == null) {
-                throw new AppException("Producto no encontrado con ID: " + id, "NOT_FOUND", null);
-            }
-
-            int resultado = productoRepository.actualizarMesesValidez(
-                    id,
-                    nuevosMeses,
-                    producto.getFechaCalibracion()
-            );
-            return resultado > 0;
-
-        } catch (SQLException e) {
-            throw new AppException("Error al actualizar los meses de validez", "DB_ERROR", e.getMessage(), e);
+        if (calibracion.getIdEquipo() == null || calibracion.getIdEquipo() <= 0) {
+            throw new AppException("Debe especificar un equipo válido", "VALIDATION_ERROR", null);
         }
-    }
-
-    @Override
-    public boolean eliminarProducto(int id) throws AppException {
-        try {
-            // Verificar que existe antes de eliminar
-            Producto producto = productoRepository.obtenerPorId(id);
-            if (producto == null) {
-                throw new AppException("Producto no encontrado con ID: " + id, "NOT_FOUND", null);
-            }
-
-            int resultado = productoRepository.eliminar(id);
-            return resultado > 0;
-
-        } catch (SQLException e) {
-            throw new AppException("Error al eliminar el producto", "DB_ERROR", e.getMessage(), e);
+        if (calibracion.getFechaCalibracion() == null) {
+            throw new AppException("La fecha de calibración es obligatoria", "VALIDATION_ERROR", null);
         }
-    }
-
-    @Override
-    public List<Producto> obtenerProductosProximosAVencer() throws AppException {
-        try {
-            return productoRepository.obtenerProximosAVencer();
-        } catch (SQLException e) {
-            throw new AppException("Error al consultar productos próximos a vencer", "DB_ERROR", e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public LocalDate calcularFechaExpiracion(LocalDate fechaCalibracion, int mesesValidez) {
-        if (fechaCalibracion == null) {
-            throw new IllegalArgumentException("La fecha de calibración no puede ser nula");
-        }
-        return fechaCalibracion.plusMonths(mesesValidez);
-    }
-
-    @Override
-    public void validarProducto(String nombre, LocalDate fechaCalibracion, int meses) throws AppException {
-        if (nombre == null || nombre.trim().isEmpty()) {
-            throw new AppException("El nombre del producto no puede estar vacío", "VALIDATION_ERROR", null);
-        }
-        if (fechaCalibracion == null) {
-            throw new AppException("La fecha de calibración no puede ser nula", "VALIDATION_ERROR", null);
-        }
-        if (meses <= 0) {
-            throw new AppException("Los meses de validez deben ser un número positivo", "VALIDATION_ERROR", null);
+        if (calibracion.getPeriodoMeses() == null || calibracion.getPeriodoMeses() <= 0) {
+            throw new AppException("El período de validez debe ser un número positivo", "VALIDATION_ERROR", null);
         }
     }
 }
